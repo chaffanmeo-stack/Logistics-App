@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Staff dashboard{% endblock %}
+{% block content %}
+<div class="dash-shell">
+  <div class="dash-header">
+    <div>
+      <h1>Dashboard</h1>
+      <div class="greet">{{ user.full_name or user.phone }} &middot; {{ user.role }}</div>
+    </div>
+    <form method="post" action="/auth/logout">
+      <button type="submit" class="logout-link" style="background:none;cursor:pointer;">Sign out</button>
+    </form>
+  </div>
+
+  {% if user.role in ("Admin", "Dispatcher") %}
+  <div class="panel">
+    <h2>Add a package</h2>
+    <div id="create-toast"></div>
+    <form id="create-package-form">
+      <div class="row2">
+        <div class="field">
+          <label for="sender_name">Sender name</label>
+          <input type="text" id="sender_name" name="sender_name" required>
+        </div>
+        <div class="field">
+          <label for="receiver_name">Receiver name</label>
+          <input type="text" id="receiver_name" name="receiver_name" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="receiver_phone">Receiver phone</label>
+        <input type="tel" id="receiver_phone" name="receiver_phone" placeholder="03XXXXXXXXX" required>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="origin_hub">Origin hub</label>
+          <select id="origin_hub" name="origin_hub" required>
+            {% for hub in hubs %}<option value="{{ hub }}">{{ hub }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="destination_hub">Destination hub</label>
+          <select id="destination_hub" name="destination_hub" required>
+            {% for hub in hubs %}<option value="{{ hub }}">{{ hub }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary" style="max-width:220px;">Book package</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="panel">
+    <h2>Recent packages</h2>
+    {% if packages %}
+      {% for pkg in packages %}
+        <div class="package-card">
+          <div>
+            <div class="tracking mono">{{ pkg.tracking_id }}</div>
+            <div class="route-line">{{ pkg.origin_hub }} &rarr; {{ pkg.destination_hub }} &middot; {{ pkg.receiver_name }} ({{ pkg.receiver_phone }})</div>
+          </div>
+          {% if pkg.status == "Booked" %}
+            <span class="status-pill status-booked">Booked</span>
+          {% elif pkg.status == "In Transit" %}
+            <span class="status-pill status-transit">In Transit</span>
+          {% elif pkg.status == "Reached Hub - Ready for Delivery" %}
+            <span class="status-pill status-ready">Ready for delivery</span>
+          {% elif pkg.status == "Delivered" %}
+            <span class="status-pill status-delivered">Delivered</span>
+          {% else %}
+            <span class="status-pill status-cancelled">{{ pkg.status }}</span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">No packages booked yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('create-package-form');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        sender_name: form.sender_name.value,
+        receiver_name: form.receiver_name.value,
+        receiver_phone: form.receiver_phone.value,
+        origin_hub: form.origin_hub.value,
+        destination_hub: form.destination_hub.value,
+      };
+      const toast = document.getElementById('create-toast');
+      toast.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/packages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          toast.innerHTML = `<div class="error-banner">Could not book package${err.detail ? ': ' + err.detail : ''}.</div>`;
+          return;
+        }
+        const data = await res.json();
+        let msg = `Booked — tracking ID <strong>${data.tracking_id}</strong>.`;
+        if (data.new_customer_pin) {
+          msg += ` New customer PIN (relay this manually for now): <strong>${data.new_customer_pin}</strong>`;
+        }
+        toast.innerHTML = `<div class="toast-success">${msg}</div>`;
+        form.reset();
+        setTimeout(() => window.location.reload(), 1800);
+      } catch (err) {
+        toast.innerHTML = '<div class="error-banner">Network error — please try again.</div>';
+      }
+    });
+  }
+</script>
+{% endblock %}

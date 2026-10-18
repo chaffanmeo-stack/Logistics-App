@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Staff Portal{% endblock %}
+{% block content %}
+<div class="staff-shell">
+  <div class="staff-brand-panel">
+    <div class="brand-mark" style="color:#fff;"><span class="dot"></span>ROUTEWISE</div>
+    <h2>Five hubs, one network.</h2>
+    <p>Sign in to dispatch, route, and track every package moving through the network.</p>
+    <div class="route-chain">
+      <span class="hub">BWP</span><span class="seg">→</span>
+      <span class="hub">MULTAN</span><span class="seg">→</span>
+      <span class="hub">LAHORE</span><span class="seg">→</span>
+      <span class="hub">LODHRAN</span><span class="seg">→</span>
+      <span class="hub">RYK</span>
+    </div>
+  </div>
+
+  <div class="staff-form-panel">
+    <div class="login-card" style="box-shadow:none;">
+      <h1>Staff Portal</h1>
+      <p class="sub">Admin and Dispatcher sign in with email. Riders sign in with phone and PIN.</p>
+
+      {% if error == "invalid_credentials" %}
+        <div class="error-banner">Those details don't match our records.</div>
+      {% elif error == "no_profile" %}
+        <div class="error-banner">This account isn't linked to a staff profile yet.</div>
+      {% endif %}
+
+      <div class="tabs">
+        <button type="button" class="tab-btn active" id="tab-staff-btn" onclick="showTab('staff')">Admin / Dispatcher</button>
+        <button type="button" class="tab-btn" id="tab-rider-btn" onclick="showTab('rider')">Rider</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-staff">
+        <form method="post" action="/auth/staff-login">
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required autofocus>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+          </div>
+          <button type="submit" class="btn-primary">Sign in</button>
+        </form>
+      </div>
+
+      <div class="tab-panel" id="tab-rider">
+        <form method="post" action="/auth/rider-login">
+          <div class="field">
+            <label for="rider-phone">Phone number</label>
+            <input type="tel" id="rider-phone" name="phone" inputmode="tel" placeholder="03XXXXXXXXX">
+          </div>
+          <div class="field">
+            <label for="rider-pin">6-digit PIN</label>
+            <input type="password" id="rider-pin" name="pin" class="pin-input" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="••••••">
+          </div>
+          <button type="submit" class="btn-primary">Sign in</button>
+        </form>
+      </div>
+
+      <a href="/" class="staff-portal-link">&larr; Back to package tracking</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showTab(name) {
+    document.getElementById('tab-staff').classList.toggle('active', name === 'staff');
+    document.getElementById('tab-rider').classList.toggle('active', name === 'rider');
+    document.getElementById('tab-staff-btn').classList.toggle('active', name === 'staff');
+    document.getElementById('tab-rider-btn').classList.toggle('active', name === 'rider');
+  }
+</script>
+{% endblock %}
